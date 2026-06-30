@@ -8,6 +8,12 @@ class SalaryRecordSerializer(serializers.ModelSerializer):
     department = serializers.CharField(source='employee.department.name', read_only=True)
     month_display = serializers.CharField(source='get_month_display', read_only=True)
 
+    def to_internal_value(self, data):
+        mutable_data = data.copy()
+        if mutable_data.get('paid_date') == '':
+            mutable_data['paid_date'] = None
+        return super().to_internal_value(mutable_data)
+
     class Meta:
         model = SalaryRecord
         fields = '__all__'

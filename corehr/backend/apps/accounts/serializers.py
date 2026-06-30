@@ -79,10 +79,10 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class RegisterSerializer(serializers.Serializer):
-    first_name = serializers.CharField(required=True, max_length=30)
-    last_name = serializers.CharField(required=True, max_length=30)
+    full_name = serializers.CharField(required=True, max_length=150)
     username = serializers.CharField(required=True, max_length=150)
     email = serializers.EmailField(required=True)
+    role = serializers.ChoiceField(required=True, choices=User.ROLE_CHOICES)
     phone = serializers.CharField(required=False, max_length=15, allow_blank=True)
     password = serializers.CharField(required=True, min_length=8, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
@@ -93,9 +93,16 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def validate_email(self, value):
+        if not value.lower().endswith('@sskatt.com'):
+            raise serializers.ValidationError('Only company email addresses ending with @sskatt.com are allowed.')
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError('A user with this email already exists.')
         return value
+
+    def validate_full_name(self, value):
+        if not value.strip():
+            raise serializers.ValidationError('Full name is required.')
+        return value.strip()
 
     def validate(self, data):
         if data['password'] != data['confirm_password']:
@@ -105,9 +112,14 @@ class RegisterSerializer(serializers.Serializer):
     def create(self, validated_data):
         validated_data.pop('confirm_password')
         password = validated_data.pop('password')
+        full_name = validated_data.pop('full_name')
+        name_parts = full_name.split(' ', 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ''
         user = User(
             **validated_data,
-            role='hr',
+            first_name=first_name,
+            last_name=last_name,
             is_active=False,  # Requires admin activation
         )
         user.set_password(password)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { reportsAPI, downloadBlob } from '../../api'
 import { PageHeader } from '../../components/ui'
-import { Download, FileSpreadsheet, Users, Laptop, DollarSign } from 'lucide-react'
+import { Download, FileSpreadsheet, Users, Laptop, IndianRupee } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const MONTHS = ['','January','February','March','April','May','June','July','August','September','October','November','December']
@@ -46,7 +46,7 @@ export default function ReportsPage() {
     {
       title: 'Salary Report',
       description: 'Monthly salary records with payment status, deductions, and net amounts.',
-      icon: DollarSign,
+      icon: IndianRupee,
       color: 'bg-green-50 border-green-200 text-green-700',
       iconColor: 'text-green-600',
       extra: (

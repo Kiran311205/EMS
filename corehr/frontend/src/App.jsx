@@ -13,10 +13,10 @@ import AssetList from './pages/assets/AssetList'
 import BankList from './pages/bank/BankList'
 import SalaryList from './pages/salary/SalaryList'
 import AttendancePage from './pages/attendance/AttendancePage'
-import LeavesPage from './pages/leaves/LeavesPage'
+
 import ReportsPage from './pages/reports/ReportsPage'
 import UsersPage from './pages/users/UsersPage'
-import AuditPage from './pages/audit/AuditPage'
+
 import ProfilePage from './pages/auth/ProfilePage'
 import DepartmentsPage from './pages/employees/DepartmentsPage'
 
@@ -49,10 +49,10 @@ function AppRoutes() {
         <Route path="bank" element={<BankList />} />
         <Route path="salary" element={<SalaryList />} />
         <Route path="attendance" element={<AttendancePage />} />
-        <Route path="leaves" element={<LeavesPage />} />
+
         <Route path="reports" element={<ReportsPage />} />
         <Route path="users" element={<PrivateRoute adminOnly><UsersPage /></PrivateRoute>} />
-        <Route path="audit" element={<PrivateRoute adminOnly><AuditPage /></PrivateRoute>} />
+
         <Route path="profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

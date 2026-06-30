@@ -14,9 +14,9 @@ export function StatCard({ title, value, icon: Icon, color = 'blue', sub }) {
         <Icon size={22} />
       </div>
       <div>
-        <p className="text-sm text-gray-500 font-medium">{title}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        <p className="text-base text-gray-700 font-semibold leading-tight">{title}</p>
+        <p className="text-3xl font-bold text-gray-900 leading-tight">{value}</p>
+        {sub && <p className="text-sm text-gray-600 mt-1">{sub}</p>}
       </div>
     </div>
   )
@@ -27,8 +27,8 @@ export function PageHeader({ title, subtitle, action }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-        {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        {subtitle && <p className="text-base text-gray-600 mt-1">{subtitle}</p>}
       </div>
       {action && <div className="flex gap-2">{action}</div>}
     </div>

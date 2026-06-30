@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { reportsAPI, employeesAPI, salaryAPI, leavesAPI } from '../../api'
+import { reportsAPI, employeesAPI, salaryAPI } from '../../api'
 import { StatCard } from '../../components/ui'
 import { useAuth } from '../../context/AuthContext'
-import { Users, UserCheck, Laptop, CreditCard, DollarSign, TrendingUp, Clock, AlertCircle } from 'lucide-react'
+import { Users, UserCheck, Laptop, CreditCard, IndianRupee, TrendingUp, Clock, AlertCircle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { format } from 'date-fns'
 
@@ -19,10 +19,6 @@ export default function Dashboard() {
     queryFn: () => reportsAPI.dashboard().then(r => r.data),
   })
 
-  const { data: leaveStats } = useQuery({
-    queryKey: ['leaves-stats'],
-    queryFn: () => leavesAPI.stats().then(r => r.data),
-  })
 
   const { data: salaryStats } = useQuery({
     queryKey: ['salary-stats', month, year],
@@ -54,13 +50,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">{format(today, 'EEEE, MMMM d, yyyy')}</p>
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600 text-base mt-1 font-medium">{format(today, 'EEEE, MMMM d, yyyy')}</p>
       </div>
 
       {/* Employee Stats */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Employee Overview</h2>
+        <h2 className="text-base font-bold text-gray-800 uppercase tracking-wide mb-3">Employee Overview</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Total Employees" value={emp.total || 0} icon={Users} color="blue" />
           <StatCard title="Active" value={emp.active || 0} icon={UserCheck} color="green" />
@@ -72,21 +68,20 @@ export default function Dashboard() {
       {/* Salary Stats (Admin) */}
       {isAdmin && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <h2 className="text-base font-bold text-gray-800 uppercase tracking-wide mb-3">
             Salary — {format(today, 'MMMM yyyy')}
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard title="Paid" value={salary.paid || 0} icon={DollarSign} color="green" />
+            <StatCard title="Paid" value={salary.paid || 0} icon={IndianRupee} color="green" />
             <StatCard title="Unpaid" value={salary.unpaid || 0} icon={AlertCircle} color="red" />
             <StatCard title="On Hold" value={salary.on_hold || 0} icon={Clock} color="yellow" />
-            <StatCard title="Leave Pending" value={leaveStats?.pending || 0} icon={Clock} color="teal" sub="Awaiting approval" />
           </div>
         </div>
       )}
 
       {/* Asset Stats */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Asset Summary</h2>
+        <h2 className="text-base font-bold text-gray-800 uppercase tracking-wide mb-3">Asset Summary</h2>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <StatCard title="Laptops Issued" value={assets.laptops_received || 0} icon={Laptop} color="blue" sub={`${assets.laptops_pending || 0} pending`} />
           <StatCard title="ID Cards Issued" value={assets.id_cards_received || 0} icon={CreditCard} color="green" sub={`${assets.id_cards_pending || 0} pending`} />
@@ -98,7 +93,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Employee status pie */}
         <div className="card">
-          <h3 className="font-semibold text-gray-800 mb-4">Employee Status</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Employee Status</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={empChartData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
@@ -113,12 +108,12 @@ export default function Dashboard() {
         {/* Salary bar */}
         {isAdmin && (
           <div className="card">
-            <h3 className="font-semibold text-gray-800 mb-4">Salary Status</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Salary Status</h3>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={salaryChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 13 }} />
+                <YAxis tick={{ fontSize: 13 }} />
                 <Tooltip />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {salaryChartData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
@@ -130,12 +125,12 @@ export default function Dashboard() {
 
         {/* Asset bar */}
         <div className="card">
-          <h3 className="font-semibold text-gray-800 mb-4">Asset Distribution</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Asset Distribution</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={assetChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 13 }} />
+              <YAxis tick={{ fontSize: 13 }} />
               <Tooltip />
               <Bar dataKey="received" name="Received" fill="#2563eb" radius={[4, 4, 0, 0]} />
               <Bar dataKey="pending" name="Pending" fill="#fbbf24" radius={[4, 4, 0, 0]} />

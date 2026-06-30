@@ -7,16 +7,16 @@ import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
 const ASSET_TYPES = [
-  { value: 'laptop', label: '💻 Laptop' },
-  { value: 'desktop', label: '🖥️ Desktop' },
-  { value: 'id_card', label: '🪪 ID Card' },
-  { value: 'key_card', label: '🔑 Key Card' },
-  { value: 'sim_card', label: '📱 SIM Card' },
-  { value: 'kit', label: '📦 Joining Kit' },
-  { value: 'mouse', label: '🖱️ Mouse' },
-  { value: 'keyboard', label: '⌨️ Keyboard' },
-  { value: 'headset', label: '🎧 Headset' },
-  { value: 'other', label: '📎 Other' },
+  { value: 'laptop', label: 'Laptop' },
+  { value: 'desktop', label: 'Desktop' },
+  { value: 'id_card', label: 'ID Card' },
+  { value: 'key_card', label: 'Key Card' },
+  { value: 'sim_card', label: 'SIM Card' },
+  { value: 'kit', label: 'Joining Kit' },
+  { value: 'mouse', label: 'Mouse' },
+  { value: 'keyboard', label: 'Keyboard' },
+  { value: 'headset', label: 'Headset' },
+  { value: 'other', label: 'Other' },
 ]
 const STATUS_OPTIONS = [
   { value: 'received', label: 'Received' },
@@ -140,29 +140,7 @@ export default function AssetList() {
         </div>
       )}
 
-      {/* Asset type summary */}
-      {stats?.by_type && (
-        <div className="card">
-          <h3 className="font-semibold text-gray-800 mb-3">Asset Summary by Type</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {['laptop', 'desktop', 'id_card', 'kit', 'key_card'].map((type) => {
-              const t = stats.by_type[type] || {}
-              const icon = { laptop: '💻', desktop: '🖥️', id_card: '🪪', kit: '📦', key_card: '🔑' }[type]
-              return (
-                <div key={type} className="border border-gray-100 rounded-xl p-3 text-center hover:border-primary-200 transition-colors">
-                  <div className="text-2xl mb-1">{icon}</div>
-                  <p className="text-xs font-medium text-gray-500 capitalize mb-2">{type.replace('_', ' ')}</p>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between"><span className="text-green-600">Received</span><span className="font-semibold">{t.received || 0}</span></div>
-                    <div className="flex justify-between"><span className="text-yellow-600">Pending</span><span className="font-semibold">{t.pending || 0}</span></div>
-                    <div className="flex justify-between"><span className="text-red-600">Not Rcvd</span><span className="font-semibold">{t.not_received || 0}</span></div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+
 
       {/* Tabs & filters */}
       <div className="card p-4 space-y-3">

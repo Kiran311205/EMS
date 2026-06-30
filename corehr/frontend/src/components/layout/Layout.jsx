@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  LayoutDashboard, Users, UserCheck, Laptop, CreditCard, DollarSign,
-  CalendarCheck, Plane, FileBarChart, ShieldCheck, ClipboardList,
+  LayoutDashboard, Users, UserCheck, Laptop, CreditCard, IndianRupee,
+  CalendarCheck, FileBarChart, ShieldCheck,
   Menu, X, LogOut, User, ChevronDown, Building2, Bell
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -14,12 +14,12 @@ const navItems = [
   { to: '/departments', label: 'Departments', icon: Building2 },
   { to: '/assets', label: 'Assets', icon: Laptop },
   { to: '/bank', label: 'Bank Details', icon: CreditCard, hrOnly: true },
-  { to: '/salary', label: 'Salary', icon: DollarSign },
+  { to: '/salary', label: 'Salary', icon: IndianRupee },
   { to: '/attendance', label: 'Attendance', icon: CalendarCheck },
-  { to: '/leaves', label: 'Leave Requests', icon: Plane },
+
   { to: '/reports', label: 'Reports', icon: FileBarChart },
   { to: '/users', label: 'User Management', icon: Users, adminOnly: true },
-  { to: '/audit', label: 'Audit Logs', icon: ClipboardList, adminOnly: true },
+
 ]
 
 function SidebarLink({ item, collapsed, onClick }) {
@@ -35,7 +35,7 @@ function SidebarLink({ item, collapsed, onClick }) {
         `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group
         ${isActive
           ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-200'
-          : 'text-gray-500 hover:bg-indigo-50 hover:text-indigo-700'}`
+          : 'text-gray-700 hover:bg-indigo-50 hover:text-indigo-700'}`
       }
     >
       <Icon size={17} className="flex-shrink-0" />
@@ -73,7 +73,7 @@ export default function Layout() {
               <ShieldCheck size={18} className="text-white" />
             </div>
             <div>
-              <span className="text-gray-900 font-bold text-lg tracking-tight">CoreHR</span>
+              <span className="text-gray-900 font-bold text-lg tracking-tight">SSKATT</span>
               <p className="text-gray-400 text-[10px] -mt-0.5 font-medium uppercase tracking-widest">Management System</p>
             </div>
           </div>

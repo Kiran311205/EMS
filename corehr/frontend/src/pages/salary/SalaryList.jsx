@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { salaryAPI, employeesAPI } from '../../api'
 import { PageHeader, Table, StatusBadge, Modal, EmptyState, ConfirmDialog, InputField, FormField } from '../../components/ui'
-import { Plus, Edit, Trash2, IndianRupee, CheckCircle, XCircle, FileText, Printer, X } from 'lucide-react'
+import { Plus, Edit, Trash2, IndianRupee, CheckCircle, XCircle, FileText, Printer, X, PauseCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../context/AuthContext'
 import { format } from 'date-fns'
@@ -21,8 +21,17 @@ function PayslipModal({ record, onClose }) {
   const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
 
   const handlePrint = () => {
-    const printContent = document.getElementById('payslip-print-area').innerHTML
+    const printArea = document.getElementById('payslip-print-area')
+    if (!printArea) {
+      toast.error('Could not prepare the payslip for printing')
+      return
+    }
+    const printContent = printArea.innerHTML
     const win = window.open('', '', 'width=900,height=700')
+    if (!win) {
+      toast.error('Pop-up blocked — allow pop-ups to print the payslip')
+      return
+    }
     win.document.write(`
       <html><head><title>Payslip - ${record.employee_name}</title>
       <style>
@@ -49,6 +58,7 @@ function PayslipModal({ record, onClose }) {
         .net-box .amount { font-size:2rem; font-weight:900; letter-spacing:-1px; }
         .net-box .sub { display:flex; gap:20px; margin-top:8px; font-size:0.75rem; opacity:0.75; }
         .footer { margin:20px 36px 28px; text-align:center; color:#94a3b8; font-size:0.7rem; border-top:1px solid #f1f5f9; padding-top:16px; }
+        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style>
       </head><body>${printContent}</body></html>
     `)
@@ -78,10 +88,10 @@ function PayslipModal({ record, onClose }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={handlePrint} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '9px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', color: 'white', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}>
+            <button onClick={handlePrint} aria-label="Print or save payslip as PDF" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '9px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', color: 'white', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}>
               <Printer size={14} /> Print / Save PDF
             </button>
-            <button onClick={onClose} style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={onClose} aria-label="Close payslip" style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <X size={15} />
             </button>
           </div>
@@ -270,9 +280,12 @@ export default function SalaryList() {
     queryFn: () => salaryAPI.stats({ month: filterMonth, year: filterYear }).then(r => r.data),
   })
 
+  // Only the admin add/edit form needs the full roster — no reason for every
+  // viewer's browser to fetch it.
   const { data: employees } = useQuery({
     queryKey: ['emp-dropdown'],
     queryFn: () => employeesAPI.dropdown().then(r => r.data),
+    enabled: isAdmin,
   })
 
   const mutation = useMutation({
@@ -307,6 +320,12 @@ export default function SalaryList() {
     onError: () => toast.error('Bulk update failed'),
   })
 
+  // Selection is scoped to whatever month/year is on screen — carrying it across
+  // a filter change risks bulk-updating rows the admin can no longer see.
+  useEffect(() => {
+    setSelected([])
+  }, [filterMonth, filterYear])
+
   const openAdd = () => { setEditItem(null); setForm({ ...emptyForm, month: filterMonth, year: filterYear }); setModal(true) }
   const openEdit = (s) => { setEditItem(s); setForm({ ...s, paid_date: s.paid_date || '' }); setModal(true) }
   const closeModal = () => { setModal(false); setEditItem(null); setForm(emptyForm) }
@@ -330,6 +349,7 @@ export default function SalaryList() {
   const records = salaryData || []
   const allSelected = selected.length === records.length && records.length > 0
   const years = Array.from({ length: 5 }, (_, i) => today.getFullYear() - i)
+  const deleteTarget = records.find(r => r.id === deleteId)
 
   return (
     <div className="space-y-5">
@@ -339,47 +359,62 @@ export default function SalaryList() {
         action={isAdmin && <button onClick={openAdd} className="btn-primary flex items-center gap-2"><Plus size={16} /> Add Record</button>}
       />
 
-      {/* Stats */}
+      {/* Stats — same indigo/violet signature as the payslip, so the two views read as one product */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: 'Total', value: stats.total, color: 'bg-blue-50 text-blue-700' },
-            { label: 'Paid', value: stats.paid, color: 'bg-green-50 text-green-700' },
-            { label: 'Unpaid', value: stats.unpaid, color: 'bg-red-50 text-red-700' },
-            { label: 'On Hold', value: stats.on_hold, color: 'bg-yellow-50 text-yellow-700' },
-          ].map((s) => (
-            <div key={s.label} className={`rounded-xl p-4 text-center ${s.color}`}>
-              <p className="text-2xl font-bold">{s.value}</p>
-              <p className="text-sm font-medium">{s.label}</p>
-            </div>
-          ))}
+          <div className="rounded-2xl p-4 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#0f0c29,#1a1560)' }}>
+            <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full" style={{ background: 'rgba(99,102,241,0.25)' }} />
+            <p className="relative text-2xl font-bold">{stats.total}</p>
+            <p className="relative text-sm font-medium text-white/60">Total records</p>
+          </div>
+          <div className="rounded-2xl p-4 bg-emerald-50 border border-emerald-100 flex flex-col justify-center">
+            <div className="flex items-center gap-1.5 text-emerald-700"><CheckCircle size={14} /><p className="text-2xl font-bold">{stats.paid}</p></div>
+            <p className="text-sm font-medium text-emerald-600">Paid</p>
+          </div>
+          <div className="rounded-2xl p-4 bg-red-50 border border-red-100 flex flex-col justify-center">
+            <div className="flex items-center gap-1.5 text-red-700"><XCircle size={14} /><p className="text-2xl font-bold">{stats.unpaid}</p></div>
+            <p className="text-sm font-medium text-red-600">Unpaid</p>
+          </div>
+          <div className="rounded-2xl p-4 bg-amber-50 border border-amber-100 flex flex-col justify-center">
+            <div className="flex items-center gap-1.5 text-amber-700"><PauseCircle size={14} /><p className="text-2xl font-bold">{stats.on_hold}</p></div>
+            <p className="text-sm font-medium text-amber-600">On hold</p>
+          </div>
         </div>
       )}
 
       {/* Filters */}
       <div className="card p-4 flex flex-wrap gap-3 items-center">
-        <select className="input-field w-40" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+        <select className="input-field w-40" value={filterMonth} onChange={e => setFilterMonth(Number(e.target.value))} aria-label="Filter by month">
           {MONTHS.slice(1).map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
         </select>
-        <select className="input-field w-32" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+        <select className="input-field w-32" value={filterYear} onChange={e => setFilterYear(Number(e.target.value))} aria-label="Filter by year">
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
 
         {/* Bulk actions (admin) */}
         {isAdmin && selected.length > 0 && (
-          <div className="flex gap-2 ml-auto">
-            <span className="text-sm text-gray-500 self-center">{selected.length} selected</span>
-            <button onClick={() => bulkMutation.mutate({ ids: selected, status: 'paid', paid_date: format(today, 'yyyy-MM-dd') })}
-              className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+          <div className="flex gap-2 ml-auto items-center">
+            <span className="text-sm text-gray-500">{selected.length} selected</span>
+            <button
+              disabled={bulkMutation.isPending}
+              onClick={() => bulkMutation.mutate({ ids: selected, status: 'paid', paid_date: format(today, 'yyyy-MM-dd') })}
+              className="flex items-center gap-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50"
+            >
               <CheckCircle size={14} /> Mark Paid
             </button>
-            <button onClick={() => bulkMutation.mutate({ ids: selected, status: 'unpaid' })}
-              className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+            <button
+              disabled={bulkMutation.isPending}
+              onClick={() => bulkMutation.mutate({ ids: selected, status: 'unpaid' })}
+              className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
+            >
               <XCircle size={14} /> Mark Unpaid
             </button>
-            <button onClick={() => bulkMutation.mutate({ ids: selected, status: 'on_hold' })}
-              className="flex items-center gap-1 px-3 py-2 bg-yellow-600 text-white rounded-lg text-sm hover:bg-yellow-700">
-              On Hold
+            <button
+              disabled={bulkMutation.isPending}
+              onClick={() => bulkMutation.mutate({ ids: selected, status: 'on_hold' })}
+              className="flex items-center gap-1 px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700 disabled:opacity-50"
+            >
+              <PauseCircle size={14} /> On Hold
             </button>
           </div>
         )}
@@ -398,9 +433,13 @@ export default function SalaryList() {
             <tr key={r.id} className="hover:bg-gray-50">
               {isAdmin && (
                 <td className="px-4 py-3">
-                  <input type="checkbox" checked={selected.includes(r.id)}
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${r.employee_name}'s salary record`}
+                    checked={selected.includes(r.id)}
                     onChange={e => setSelected(s => e.target.checked ? [...s, r.id] : s.filter(x => x !== r.id))}
-                    className="rounded border-gray-300" />
+                    className="rounded border-gray-300"
+                  />
                 </td>
               )}
               <td className="px-4 py-3">
@@ -410,13 +449,14 @@ export default function SalaryList() {
               <td className="px-4 py-3 text-sm text-gray-600">{r.department || '—'}</td>
               <td className="px-4 py-3 text-sm text-gray-600">{MONTHS[r.month]} {r.year}</td>
               <td className="px-4 py-3 text-sm">₹{Number(r.basic_salary).toLocaleString('en-IN')}</td>
-              <td className="px-4 py-3 text-sm font-semibold text-gray-900">₹{Number(r.net_salary).toLocaleString('en-IN')}</td>
+              <td className={`px-4 py-3 text-sm font-semibold ${Number(r.net_salary) < 0 ? 'text-red-600' : 'text-gray-900'}`}>₹{Number(r.net_salary).toLocaleString('en-IN')}</td>
               <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
               <td className="px-4 py-3 text-sm text-gray-600">{r.paid_date ? format(new Date(r.paid_date), 'dd MMM yyyy') : '—'}</td>
               <td className="px-4 py-3 flex gap-1">
                 {/* Payslip button — always visible */}
                 <button
                   onClick={() => setPayslipRecord(r)}
+                  aria-label={`View payslip for ${r.employee_name}`}
                   title="View Payslip"
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
                   style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 3px 8px rgba(99,102,241,0.3)' }}
@@ -425,8 +465,8 @@ export default function SalaryList() {
                 </button>
                 {isAdmin && (
                   <>
-                    <button onClick={() => openEdit(r)} className="p-1.5 rounded hover:bg-yellow-50 text-yellow-600"><Edit size={14} /></button>
-                    <button onClick={() => setDeleteId(r.id)} className="p-1.5 rounded hover:bg-red-50 text-red-600"><Trash2 size={14} /></button>
+                    <button aria-label={`Edit ${r.employee_name}'s salary record`} title="Edit" onClick={() => openEdit(r)} className="p-1.5 rounded hover:bg-yellow-50 text-yellow-600"><Edit size={14} /></button>
+                    <button aria-label={`Delete ${r.employee_name}'s salary record`} title="Delete" onClick={() => setDeleteId(r.id)} className="p-1.5 rounded hover:bg-red-50 text-red-600"><Trash2 size={14} /></button>
                   </>
                 )}
               </td>
@@ -435,7 +475,13 @@ export default function SalaryList() {
         </Table>
         {isAdmin && records.length > 0 && (
           <div className="px-4 py-2 border-t flex items-center gap-2">
-            <input type="checkbox" checked={allSelected} onChange={e => setSelected(e.target.checked ? records.map(r => r.id) : [])} className="rounded" />
+            <input
+              type="checkbox"
+              aria-label="Select all records on this page"
+              checked={allSelected}
+              onChange={e => setSelected(e.target.checked ? records.map(r => r.id) : [])}
+              className="rounded"
+            />
             <span className="text-sm text-gray-500">Select all on this page</span>
           </div>
         )}
@@ -457,16 +503,16 @@ export default function SalaryList() {
                 {MONTHS.slice(1).map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
               </select>
             </FormField>
-            <InputField label="Year" required name="year" type="number" value={form.year} onChange={handleFormChange} />
-            <InputField label="Basic Salary (₹)" required name="basic_salary" type="number" value={form.basic_salary} onChange={handleFormChange} />
-            <InputField label="HRA (₹)" name="hra" type="number" value={form.hra} onChange={handleFormChange} />
-            <InputField label="Allowances (₹)" name="allowances" type="number" value={form.allowances} onChange={handleFormChange} />
-            <InputField label="PF Deduction (₹)" name="pf_deduction" type="number" value={form.pf_deduction} onChange={handleFormChange} />
-            <InputField label="Tax Deduction (₹)" name="tax_deduction" type="number" value={form.tax_deduction} onChange={handleFormChange} />
-            <InputField label="Other Deductions (₹)" name="deductions" type="number" value={form.deductions} onChange={handleFormChange} />
-            <div className="bg-blue-50 rounded-xl p-3 flex flex-col justify-center">
-              <p className="text-xs text-blue-600 font-medium">Net Salary</p>
-              <p className="text-xl font-bold text-blue-800">₹{Number(form.net_salary || 0).toLocaleString('en-IN')}</p>
+            <InputField label="Year" required name="year" type="number" min={2000} max={today.getFullYear() + 1} value={form.year} onChange={handleFormChange} />
+            <InputField label="Basic Salary (₹)" required name="basic_salary" type="number" min={0} value={form.basic_salary} onChange={handleFormChange} />
+            <InputField label="HRA (₹)" name="hra" type="number" min={0} value={form.hra} onChange={handleFormChange} />
+            <InputField label="Allowances (₹)" name="allowances" type="number" min={0} value={form.allowances} onChange={handleFormChange} />
+            <InputField label="PF Deduction (₹)" name="pf_deduction" type="number" min={0} value={form.pf_deduction} onChange={handleFormChange} />
+            <InputField label="Tax Deduction (₹)" name="tax_deduction" type="number" min={0} value={form.tax_deduction} onChange={handleFormChange} />
+            <InputField label="Other Deductions (₹)" name="deductions" type="number" min={0} value={form.deductions} onChange={handleFormChange} />
+            <div className="rounded-xl p-3 flex flex-col justify-center text-white" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+              <p className="text-xs text-white/70 font-medium">Net Salary</p>
+              <p className="text-xl font-bold">₹{Number(form.net_salary || 0).toLocaleString('en-IN')}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 border-t pt-4">
@@ -494,7 +540,14 @@ export default function SalaryList() {
         </div>
       </Modal>
 
-      <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => deleteMutation.mutate(deleteId)} message="Delete this salary record?" />
+      <ConfirmDialog
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => deleteMutation.mutate(deleteId)}
+        message={deleteTarget
+          ? `Delete the ${MONTHS[deleteTarget.month]} ${deleteTarget.year} salary record for ${deleteTarget.employee_name}? This cannot be undone.`
+          : 'Delete this salary record?'}
+      />
 
       {/* Payslip Modal */}
       {payslipRecord && <PayslipModal record={payslipRecord} onClose={() => setPayslipRecord(null)} />}

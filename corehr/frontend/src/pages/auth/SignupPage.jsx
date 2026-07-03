@@ -1,8 +1,47 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ShieldCheck, Eye, EyeOff, Lock, User, Mail, Phone, UserPlus, ArrowLeft, CheckCircle, CheckCircle2, Sparkles } from 'lucide-react'
+import { ShieldCheck, Eye, EyeOff, Lock, User, Mail, Phone, UserPlus, ArrowLeft, CheckCircle2, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authAPI } from '../../api'
+
+// Shared tokens with LoginPage — keep these two files in sync.
+const autofillFix = `
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    -webkit-text-fill-color: #0f172a;
+    caret-color: #0f172a;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes floatSlow {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(12px, -14px) scale(1.03); }
+  }
+  @keyframes floatSlower {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-16px, 10px) scale(1.05); }
+  }
+  @keyframes popIn {
+    0% { opacity: 0; transform: scale(0.85); }
+    70% { transform: scale(1.04); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .float-slow { animation: floatSlow 9s ease-in-out infinite; }
+  .float-slower { animation: floatSlower 12s ease-in-out infinite; }
+  .pop-in { animation: popIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+`
+
+const steps = [
+  { label: 'Use your company email', meta: '@sskatt.com required' },
+  { label: 'Choose your role', meta: 'HR manager or admin' },
+  { label: 'Wait for activation', meta: 'An admin confirms access' },
+]
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -18,25 +57,33 @@ export default function SignupPage() {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [errors, setErrors] = useState({})
   const navigate = useNavigate()
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm((f) => ({ ...f, [name]: value }))
+    if (errors[name]) setErrors((er) => ({ ...er, [name]: '' }))
+  }
+
+  const validate = () => {
+    const next = {}
+    if (!form.full_name.trim()) next.full_name = 'Required'
+    if (!form.username.trim()) next.username = 'Required'
+    if (!form.email.trim()) next.email = 'Required'
+    else if (!form.email.toLowerCase().endsWith('@sskatt.com')) next.email = 'Use your @sskatt.com email'
+    if (!form.password) next.password = 'Required'
+    else if (form.password.length < 8) next.password = 'At least 8 characters'
+    if (!form.confirm_password) next.confirm_password = 'Required'
+    else if (form.password !== form.confirm_password) next.confirm_password = 'Passwords don\u2019t match'
+    return next
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const required = ['full_name', 'username', 'email', 'role', 'password', 'confirm_password']
-    for (const key of required) {
-      if (!form[key].trim()) return toast.error('Please fill in all required fields')
-    }
-    if (!form.email.toLowerCase().endsWith('@sskatt.com')) {
-      return toast.error('Please use your company email (@sskatt.com)')
-    }
-    if (form.password !== form.confirm_password) {
-      return toast.error('Passwords do not match')
-    }
-    if (form.password.length < 8) {
-      return toast.error('Password must be at least 8 characters')
-    }
+    const next = validate()
+    setErrors(next)
+    if (Object.keys(next).length > 0) return
 
     setLoading(true)
     try {
@@ -58,267 +105,310 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#f6f8f4]">
-      <div className="absolute -top-40 -left-24 h-[26rem] w-[26rem] rounded-full bg-[#0b6e4f]/10 blur-3xl" />
-      <div className="absolute -bottom-40 -right-24 h-[30rem] w-[30rem] rounded-full bg-[#ff9f1c]/10 blur-3xl" />
+    <div
+      className="min-h-screen bg-[#faf9f5] text-[#0f172a] antialiased"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'Segoe UI', sans-serif" }}
+    >
+      <style>{autofillFix}</style>
+      <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
+        {/* Left — brand & onboarding steps */}
+        <section className="relative hidden flex-col justify-between overflow-hidden bg-[#0a2a20] p-12 text-white lg:flex xl:p-16">
+          {/* Ambient gradient wash */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(circle at 15% 8%, rgba(16,163,110,0.35) 0%, transparent 45%), radial-gradient(circle at 85% 92%, rgba(16,163,110,0.22) 0%, transparent 50%)',
+            }}
+          />
+          {/* Fine grid texture */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.05]"
+            style={{
+              backgroundImage:
+                'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+              backgroundSize: '48px 48px',
+            }}
+          />
+          {/* Floating decorative shapes */}
+          <div className="float-slow pointer-events-none absolute -right-16 top-24 h-72 w-72 rounded-full bg-gradient-to-br from-[#16815b]/25 to-transparent blur-3xl" />
+          <div className="float-slower pointer-events-none absolute -left-24 bottom-16 h-80 w-80 rounded-full bg-gradient-to-tr from-[#0e5a3f]/40 to-transparent blur-3xl" />
+          <div className="pointer-events-none absolute right-16 bottom-40 h-24 w-24 rounded-2xl border border-white/[0.07] bg-white/[0.02] [transform:rotate(12deg)]" />
 
-      <div className="relative min-h-screen grid lg:grid-cols-2">
-        <section className="hidden lg:flex flex-col justify-between p-12 xl:p-16">
-          <div className="inline-flex items-center gap-3 rounded-2xl border border-[#0b6e4f]/20 bg-white/80 px-4 py-3 backdrop-blur-sm w-fit">
-            <div className="h-10 w-10 rounded-xl bg-[#0b6e4f] flex items-center justify-center shadow-lg shadow-[#0b6e4f]/20">
-              <ShieldCheck size={21} className="text-white" />
+          <Link to="/login" className="relative inline-flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.08] shadow-inner ring-1 ring-white/15 backdrop-blur-sm">
+              <ShieldCheck size={19} strokeWidth={2.25} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#0f172a]">SSKATT</p>
-              <p className="text-xs text-[#64748b]">Employee Operations Console</p>
+              <p className="text-sm font-bold tracking-tight">SSKATT</p>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-white/45">Employee Operations Console</p>
             </div>
+          </Link>
+
+          <div className="relative max-w-lg space-y-7">
+            <h1 className="text-[2.85rem] font-extrabold leading-[1.06] tracking-tight xl:text-[3.4rem]">
+              Build your
+              <br />
+              <span className="bg-gradient-to-r from-[#5fe0b3] to-[#9be8cf] bg-clip-text text-transparent">
+                HR workspace.
+              </span>
+            </h1>
+            <p className="text-[15.5px] leading-relaxed text-white/60">
+              Register a team account to manage people operations with
+              structure, speed, and full visibility from day one.
+            </p>
           </div>
 
-          <div className="space-y-8">
-            <h1 className="text-5xl xl:text-6xl font-black leading-[1.04] tracking-tight text-[#0f172a]" style={{ fontFamily: "'Poppins', 'Segoe UI', sans-serif" }}>
-              Build your
-              <span className="block text-[#0b6e4f]">HR workspace.</span>
-            </h1>
-            <p className="max-w-xl text-lg text-[#475569] leading-relaxed">
-              Register your team account to manage people operations with structure, speed, and full visibility.
+          {/* Signature element: onboarding steps — what happens after you submit */}
+          <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.035] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+              How registration works
             </p>
-
-            <div className="space-y-3 max-w-xl">
-              {['Use your company email', 'Choose role: HR or Admin', 'Wait for admin activation'].map((step) => (
-                <div key={step} className="rounded-xl border border-[#0b6e4f]/15 bg-white/85 px-3 py-2.5 text-sm font-medium text-[#1e293b]">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={14} className="text-[#0b6e4f]" />
-                    <span>{step}</span>
+            <div className="relative space-y-4">
+              <div className="absolute left-[11px] top-1 bottom-1 w-px bg-gradient-to-b from-white/20 via-white/10 to-transparent" />
+              {steps.map((s, i) => (
+                <div key={s.label} className="relative flex items-center gap-3.5">
+                  <span className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0e4735] text-[11px] font-semibold text-[#7fe3b8] ring-1 ring-white/15">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13.5px] font-medium text-white/90">{s.label}</p>
+                    <p className="truncate text-[12px] text-white/40">{s.meta}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="inline-flex items-center gap-2 text-sm text-[#64748b]">
-            <Sparkles size={14} className="text-[#ff9f1c]" />
-            <span>Designed for speed, clarity, and compliance</span>
-          </div>
+          <p className="relative text-[12.5px] text-white/35">
+            Access is granted by your workspace admin — no self-service approval.
+          </p>
         </section>
 
-        <section className="flex items-center justify-center p-6 sm:p-10 lg:p-14">
-          <div className="w-full max-w-md">
-            <div className="lg:hidden mb-8 inline-flex items-center gap-2 rounded-xl border border-[#0b6e4f]/20 bg-white px-3 py-2">
-              <div className="h-8 w-8 rounded-lg bg-[#0b6e4f] flex items-center justify-center">
-                <ShieldCheck size={18} className="text-white" />
+        {/* Right — form */}
+        <section className="flex items-center justify-center px-6 py-12 sm:px-10">
+          <div className="w-full max-w-[480px]">
+            <div className="mb-8 inline-flex items-center gap-2.5 lg:hidden">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#0e8f63] to-[#0b6e4f] shadow-md shadow-[#0b6e4f]/20">
+                <ShieldCheck size={17} className="text-white" />
               </div>
-              <span className="font-semibold text-[#0f172a]">SSKATT</span>
+              <span className="font-bold tracking-tight text-[#0f172a]">SSKATT Platform</span>
             </div>
 
             {success ? (
-              <div className="rounded-3xl border border-[#0f172a]/10 bg-white/92 p-8 text-center shadow-[0_20px_60px_-24px_rgba(15,23,42,0.35)] backdrop-blur-sm">
-                <div className="flex justify-center mb-4">
-                  <CheckCircle size={64} className="text-[#0b6e4f]" />
+              <div className="pop-in rounded-3xl border border-[#e7e4d9] bg-white/80 p-8 text-center shadow-[0_20px_60px_-15px_rgba(11,110,79,0.18)] backdrop-blur-sm sm:p-10">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#0b6e4f]/15 to-[#0b6e4f]/5 ring-1 ring-[#0b6e4f]/10">
+                  <CheckCircle2 size={30} className="text-[#0b6e4f]" strokeWidth={2} />
                 </div>
-                <h2 className="text-2xl font-black text-[#0f172a]" style={{ fontFamily: "'Poppins', 'Segoe UI', sans-serif" }}>
-                  Account Created!
-                </h2>
-                <p className="text-[#64748b] mt-2">
-                  Your request is submitted for admin approval. You can sign in once activation is complete.
+                <h2 className="text-[1.85rem] font-extrabold tracking-tight">Account created</h2>
+                <p className="mt-2.5 text-[14.5px] leading-relaxed text-[#5b6472]">
+                  Your request is submitted for admin approval. You can sign in
+                  once activation is complete.
                 </p>
-                <p className="text-sm text-[#94a3b8] mt-3">Redirecting to login in a moment...</p>
+                <p className="mt-3.5 text-[12.5px] text-[#94a3b8]">Redirecting to sign in&hellip;</p>
                 <Link
                   to="/login"
-                  className="inline-block mt-4 text-[#0b6e4f] hover:text-[#08563e] font-semibold text-sm"
+                  className="mt-6 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13.5px] font-semibold text-[#0b6e4f] transition-colors duration-200 hover:bg-[#0b6e4f]/[0.06] hover:text-[#08563e]"
                 >
-                  Go to Login
+                  <ArrowLeft size={14} />
+                  Go to sign in
                 </Link>
               </div>
             ) : (
-              <div className="rounded-3xl border border-[#0f172a]/10 bg-white/92 p-7 sm:p-8 shadow-[0_20px_60px_-24px_rgba(15,23,42,0.35)] backdrop-blur-sm">
+              <div className="fade-in-up rounded-3xl border border-[#eae7dc] bg-white/70 p-7 shadow-[0_20px_60px_-20px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:p-9">
                 <div className="mb-7">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#0b6e4f]">Registration</p>
-                  <h2 className="mt-2 text-3xl font-black tracking-tight text-[#0f172a]" style={{ fontFamily: "'Poppins', 'Segoe UI', sans-serif" }}>
-                    Create Account
-                  </h2>
-                  <p className="mt-2 text-sm text-[#64748b]">Fill details to request access to CoreHR.</p>
+                  <div className="mb-5 h-1 w-12 rounded-full bg-gradient-to-r from-[#0b6e4f] to-[#16a374]" />
+                  <h2 className="text-[2.1rem] font-extrabold tracking-tight text-[#0f172a]">Create account</h2>
+                  <p className="mt-2 text-[15px] leading-relaxed text-[#5b6472]">
+                    Fill in your details to request access to SSKATT.
+                  </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#334155] mb-2">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <User size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
-                      <input
-                        id="signup-full-name"
-                        type="text"
-                        name="full_name"
-                        value={form.full_name}
-                        onChange={handleChange}
-                        className="input-field pl-10 !py-2.5 !rounded-xl !border-[#cbd5e1] focus:!ring-[#0b6e4f]/30"
-                        placeholder="Enter full name"
-                        autoComplete="name"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-[#334155] mb-2">
-                      Username <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <UserPlus size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
-                      <input
-                        id="signup-username"
-                        type="text"
-                        name="username"
-                        value={form.username}
-                        onChange={handleChange}
-                        className="input-field pl-10 !py-2.5 !rounded-xl !border-[#cbd5e1] focus:!ring-[#0b6e4f]/30"
-                        placeholder="Choose a username"
-                        autoComplete="username"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-[#334155] mb-2">
-                      Company Email <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Mail size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
-                      <input
-                        id="signup-email"
-                        type="email"
-                        name="email"
-                        value={form.email}
-                        onChange={handleChange}
-                        className="input-field pl-10 !py-2.5 !rounded-xl !border-[#cbd5e1] focus:!ring-[#0b6e4f]/30"
-                        placeholder="you@sskatt.com"
-                        autoComplete="email"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-[#334155] mb-2">
-                      Registering As <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="signup-role"
-                      name="role"
-                      value={form.role}
+                <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field
+                      id="signup-full-name"
+                      label="Full name"
+                      required
+                      icon={User}
+                      name="full_name"
+                      value={form.full_name}
                       onChange={handleChange}
-                      className="input-field !py-2.5 !rounded-xl !border-[#cbd5e1] focus:!ring-[#0b6e4f]/30"
-                    >
-                      <option value="hr">HR Manager</option>
-                      <option value="admin">Admin</option>
-                    </select>
+                      placeholder="Anita Rao"
+                      autoComplete="name"
+                      error={errors.full_name}
+                    />
+                    <Field
+                      id="signup-username"
+                      label="Username"
+                      required
+                      icon={UserPlus}
+                      name="username"
+                      value={form.username}
+                      onChange={handleChange}
+                      placeholder="anita.rao"
+                      autoComplete="username"
+                      error={errors.username}
+                    />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-[#334155] mb-2">Phone</label>
-                    <div className="relative">
-                      <Phone size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
-                      <input
-                        id="signup-phone"
-                        type="tel"
-                        name="phone"
-                        value={form.phone}
-                        onChange={handleChange}
-                        className="input-field pl-10 !py-2.5 !rounded-xl !border-[#cbd5e1] focus:!ring-[#0b6e4f]/30"
-                        placeholder="+91 98765 43210"
-                        autoComplete="tel"
-                      />
+                  <Field
+                    id="signup-email"
+                    label="Company email"
+                    required
+                    icon={Mail}
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="you@sskatt.com"
+                    autoComplete="email"
+                    error={errors.email}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="signup-role" className="mb-1.5 block text-[13.5px] font-semibold text-[#334155]">
+                        Registering as <span className="text-[#c2410c]">*</span>
+                      </label>
+                      <div className="group relative">
+                        <select
+                          id="signup-role"
+                          name="role"
+                          value={form.role}
+                          onChange={handleChange}
+                          className="h-12 w-full appearance-none rounded-xl border border-[#dcdad1] bg-white pl-3.5 pr-9 text-[15px] font-normal text-[#0f172a] outline-none transition-all duration-200 hover:border-[#b9c4bc] focus:border-[#0b6e4f] focus:ring-4 focus:ring-[#0b6e4f]/10"
+                        >
+                          <option value="hr">HR Manager</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                        <ChevronDown size={15} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8] transition-transform duration-200 group-focus-within:rotate-180" />
+                      </div>
                     </div>
+                    <Field
+                      id="signup-phone"
+                      label="Phone"
+                      icon={Phone}
+                      type="tel"
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="+91 98765 43210"
+                      autoComplete="tel"
+                      hint="Optional"
+                    />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-[#334155] mb-2">
-                      Password <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Lock size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
-                      <input
-                        id="signup-password"
-                        type={showPwd ? 'text' : 'password'}
-                        name="password"
-                        value={form.password}
-                        onChange={handleChange}
-                        className="input-field pl-10 pr-10 !py-2.5 !rounded-xl !border-[#cbd5e1] focus:!ring-[#0b6e4f]/30"
-                        placeholder="At least 8 characters"
-                        autoComplete="new-password"
-                      />
+                  <Field
+                    id="signup-password"
+                    label="Password"
+                    required
+                    icon={Lock}
+                    type={showPwd ? 'text' : 'password'}
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="At least 8 characters"
+                    autoComplete="new-password"
+                    error={errors.password}
+                    trailing={
                       <button
                         type="button"
                         onClick={() => setShowPwd(!showPwd)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#0f172a]"
+                        className="rounded-md p-1 text-[#94a3b8] transition-colors duration-200 hover:bg-[#0b6e4f]/[0.06] hover:text-[#0f172a]"
+                        aria-label={showPwd ? 'Hide password' : 'Show password'}
                       >
-                        {showPwd ? <EyeOff size={17} /> : <Eye size={17} />}
+                        {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
-                    </div>
-                  </div>
+                    }
+                  />
 
-                  <div>
-                    <label className="block text-sm font-semibold text-[#334155] mb-2">
-                      Confirm Password <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Lock size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
-                      <input
-                        id="signup-confirm-password"
-                        type={showConfirmPwd ? 'text' : 'password'}
-                        name="confirm_password"
-                        value={form.confirm_password}
-                        onChange={handleChange}
-                        className="input-field pl-10 pr-10 !py-2.5 !rounded-xl !border-[#cbd5e1] focus:!ring-[#0b6e4f]/30"
-                        placeholder="Re-enter your password"
-                        autoComplete="new-password"
-                      />
+                  <Field
+                    id="signup-confirm-password"
+                    label="Confirm password"
+                    required
+                    icon={Lock}
+                    type={showConfirmPwd ? 'text' : 'password'}
+                    name="confirm_password"
+                    value={form.confirm_password}
+                    onChange={handleChange}
+                    placeholder="Re-enter your password"
+                    autoComplete="new-password"
+                    error={errors.confirm_password}
+                    trailing={
                       <button
                         type="button"
                         onClick={() => setShowConfirmPwd(!showConfirmPwd)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#0f172a]"
+                        className="rounded-md p-1 text-[#94a3b8] transition-colors duration-200 hover:bg-[#0b6e4f]/[0.06] hover:text-[#0f172a]"
+                        aria-label={showConfirmPwd ? 'Hide password' : 'Show password'}
                       >
-                        {showConfirmPwd ? <EyeOff size={17} /> : <Eye size={17} />}
+                        {showConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
-                    </div>
-                  </div>
+                    }
+                  />
 
                   <button
                     type="submit"
                     id="signup-submit-btn"
                     disabled={loading}
-                    className="w-full rounded-xl bg-[#0b6e4f] hover:bg-[#08563e] text-white font-semibold py-3 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="group mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-[#0e8f63] to-[#0b6e4f] text-[15px] font-semibold text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_8px_20px_-6px_rgba(11,110,79,0.45)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_12px_24px_-6px_rgba(11,110,79,0.55)] active:translate-y-0 active:shadow-[0_1px_0_rgba(255,255,255,0.1)_inset,0_4px_10px_-4px_rgba(11,110,79,0.4)] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none"
                   >
                     {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                        Creating account...
-                      </span>
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                        Creating account
+                      </>
                     ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <UserPlus size={18} />
-                        Create Account
-                      </span>
+                      <>
+                        <UserPlus size={16} className="transition-transform duration-200 group-hover:scale-110" />
+                        Create account
+                      </>
                     )}
                   </button>
                 </form>
 
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-[#64748b]">
-                    Already have an account?{' '}
-                    <Link
-                      to="/login"
-                      className="text-[#0b6e4f] hover:text-[#08563e] font-semibold inline-flex items-center gap-1"
-                    >
-                      <ArrowLeft size={14} />
-                      Back to Sign In
-                    </Link>
-                  </p>
-                </div>
+                <p className="mt-8 text-center text-[14px] text-[#5b6472]">
+                  Already have an account?{' '}
+                  <Link to="/login" className="font-semibold text-[#0b6e4f] transition-colors duration-200 hover:text-[#08563e]">
+                    Sign in
+                  </Link>
+                </p>
               </div>
             )}
           </div>
         </section>
       </div>
+    </div>
+  )
+}
+
+function Field({ id, label, required, icon: Icon, error, hint, trailing, ...inputProps }) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <label htmlFor={id} className="block text-[13.5px] font-semibold text-[#334155]">
+          {label} {required && <span className="text-[#c2410c]">*</span>}
+        </label>
+        {hint && <span className="text-[12px] text-[#94a3b8]">{hint}</span>}
+      </div>
+      <div className="relative">
+        <Icon size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94a3b8] transition-colors duration-200" />
+        <input
+          id={id}
+          {...inputProps}
+          className={`h-12 w-full rounded-xl border bg-white pl-10 ${trailing ? 'pr-11' : 'pr-3.5'} text-[15px] text-[#0f172a] placeholder:text-[#a8b0bb] outline-none transition-all duration-200 focus:ring-4 ${
+            error
+              ? 'border-[#e08a6c] focus:border-[#e08a6c] focus:ring-[#e08a6c]/12'
+              : 'border-[#dcdad1] hover:border-[#b9c4bc] focus:border-[#0b6e4f] focus:ring-[#0b6e4f]/10'
+          }`}
+        />
+        {trailing && <div className="absolute right-3.5 top-1/2 flex -translate-y-1/2 items-center">{trailing}</div>}
+      </div>
+      {error && (
+        <p className="fade-in-up mt-1.5 flex items-center gap-1 text-[12.5px] font-medium text-[#c2410c]">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

@@ -234,7 +234,7 @@ export default function SignupPage() {
                       name="full_name"
                       value={form.full_name}
                       onChange={handleChange}
-                      placeholder="Anita Rao"
+                      placeholder="your full name"
                       autoComplete="name"
                       error={errors.full_name}
                     />
@@ -246,7 +246,7 @@ export default function SignupPage() {
                       name="username"
                       value={form.username}
                       onChange={handleChange}
-                      placeholder="anita.rao"
+                      placeholder="your username"
                       autoComplete="username"
                       error={errors.username}
                     />
@@ -293,7 +293,7 @@ export default function SignupPage() {
                       name="phone"
                       value={form.phone}
                       onChange={handleChange}
-                      placeholder="+91 98765 43210"
+                      placeholder="your phone number"
                       autoComplete="tel"
                       hint="Optional"
                     />
@@ -318,7 +318,7 @@ export default function SignupPage() {
                         className="rounded-md p-1 text-[#94a3b8] transition-colors duration-200 hover:bg-[#0b6e4f]/[0.06] hover:text-[#0f172a]"
                         aria-label={showPwd ? 'Hide password' : 'Show password'}
                       >
-                        {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showPwd ? <EyeOff size={10} /> : <Eye size={16} />}
                       </button>
                     }
                   />
@@ -342,7 +342,7 @@ export default function SignupPage() {
                         className="rounded-md p-1 text-[#94a3b8] transition-colors duration-200 hover:bg-[#0b6e4f]/[0.06] hover:text-[#0f172a]"
                         aria-label={showConfirmPwd ? 'Hide password' : 'Show password'}
                       >
-                        {showConfirmPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showConfirmPwd ? <EyeOff size={8} /> : <Eye size={16} />}
                       </button>
                     }
                   />
